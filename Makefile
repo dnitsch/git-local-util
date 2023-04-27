@@ -1,6 +1,7 @@
 OWNER = dnitsch
 NAME := git-local-util
-VERSION := "v0.0.0"
+GIT_TAG := "1.18.0"
+VERSION := "v$(GIT_TAG)"
 REVISION := "aaaabbbb"
 
 LDFLAGS := -ldflags="-s -w -X \"github.com/$(OWNER)/$(NAME)/cmd.Version=$(VERSION)\" -X \"github.com/$(OWNER)/$(NAME)/cmd.Revision=$(REVISION)\" -extldflags -static"
@@ -31,7 +32,7 @@ build_ci: clean install_ci bingen
 cross-build: bingen
 
 tag: 
-	git tag -a $(VERSION) -m "ci tag release uistrategy" $(REVISION)
+	git tag -a $(VERSION) -m "ci tag release" $(REVISION)
 	git push origin $(VERSION)
 
 release:
