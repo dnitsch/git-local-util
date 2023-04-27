@@ -30,6 +30,10 @@ build_ci: clean install_ci bingen
 
 cross-build: bingen
 
+tag: 
+	git tag -a $(VERSION) -m "ci tag release uistrategy" $(REVISION)
+	git push origin $(VERSION)
+
 release:
 	OWNER=$(OWNER) NAME=$(NAME) PAT=$(PAT) VERSION=$(VERSION) . hack/release.sh 
 

@@ -18,5 +18,5 @@ Migrates `remote "origin"` from one Url to another - useful when a repo or a lar
 Simple migration
 
 ```bash
-git-local-util migrate -f "old-org-name" -r "new-org" --verbose
+git-local-util migrate -d "./test" -f "old-org-name" -r "new-org" --verbose
 ```
