@@ -16,19 +16,8 @@ var newRepo = "org-new"
 
 // helperCreateTmpFsObject returns a the parent temp dir
 // and a list of locations where fake configs were created
-func helperCreateTmpFsObject(t *testing.T, randDirs []string) (string, []string) {
+func helperCreateTmpFsObject(t *testing.T, input string, randDirs []string) (string, []string) {
 	createdConfig := []string{}
-	tpl := `[core]
-    repositoryformatversion = 0
-    filemode                = true
-    bare                    = false
-    logallrefupdates        = true
-    ignorecase              = true
-    precomposeunicode       = true
-
-[remote "origin"]
-    url   = git@ssh.foo.com:v3/org1/someproj/%s
-    fetch = +refs/heads/*:refs/remotes/origin/*`
 
 	dir, _ := os.MkdirTemp("", "git-config")
 	for _, v := range randDirs {
@@ -38,7 +27,7 @@ func helperCreateTmpFsObject(t *testing.T, randDirs []string) (string, []string)
 			t.Fatal(err)
 		}
 		file := filepath.Join(bf, "config")
-		if err := os.WriteFile(file, []byte(fmt.Sprintf(tpl, v)), 0777); err != nil {
+		if err := os.WriteFile(file, []byte(fmt.Sprintf(input, v)), 0777); err != nil {
 			t.Fatal(err)
 		}
 		createdConfig = append(createdConfig, file)
@@ -54,7 +43,12 @@ func Test_ReplaceConfigOrigin_should_successfully_pass(t *testing.T) {
 	}{
 		"when using absolute path": {
 			func(input []string) (string, []string, func()) {
-				parentDir, files := helperCreateTmpFsObject(t, input)
+				tpl := `[core]
+				repositoryformatversion = 0
+[remote "origin"]
+	url   = git@ssh.foo.com:v3/org1/someproj/%s
+	fetch = +refs/heads/*:refs/remotes/origin/*`
+				parentDir, files := helperCreateTmpFsObject(t, tpl, input)
 				return parentDir, files, func() {
 					_ = os.Remove(parentDir)
 				}
@@ -63,7 +57,7 @@ func Test_ReplaceConfigOrigin_should_successfully_pass(t *testing.T) {
 		},
 		"no directories found": {
 			func(input []string) (string, []string, func()) {
-				parentDir, files := helperCreateTmpFsObject(t, input)
+				parentDir, files := helperCreateTmpFsObject(t, ``, input)
 				return parentDir, files, func() {
 					_ = os.Remove(parentDir)
 				}
@@ -75,8 +69,8 @@ func Test_ReplaceConfigOrigin_should_successfully_pass(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			parentDir, setupFiles, cleanUp := tt.testDir(tt.want)
 			defer cleanUp()
-			logOut := &bytes.Buffer{}
-			g := gmo.New("org1", newRepo, log.New(logOut, log.DebugLvl))
+			outLog := &bytes.Buffer{}
+			g := gmo.New("org1", newRepo, log.New(outLog, log.DebugLvl))
 			err := g.ReplaceConfigOrigin(parentDir)
 			if err != nil {
 				t.Fatal(err)
@@ -86,6 +80,41 @@ func Test_ReplaceConfigOrigin_should_successfully_pass(t *testing.T) {
 				if !strings.Contains(string(got), newRepo) {
 					t.Errorf("got: %v\nexpected output to include: %v", string(got), newRepo)
 				}
+			}
+		})
+	}
+}
+
+func Test(t *testing.T) {
+	ttests := map[string]struct {
+		tpl string
+	}{
+		"incorrectly formatted input": {
+			`[co
+url   = git@ssh.foo.com:v3/org1/someproj/%s
+fetch = +refs/heads/*:refs/remotes/origin/*`,
+		},
+		// 		"key not found in config": {
+		// 			`[core]
+		// 				repositoryformatversion = 0
+		// [notfound]
+		// 	wrong   = git@ssh.foo.com:v3/org1/someproj/%s
+		// 	fetch = +refs/heads/*:refs/remotes/origin/*`,
+		// 		},
+	}
+	for name, tt := range ttests {
+		t.Run(name, func(t *testing.T) {
+			parentDir, _ := helperCreateTmpFsObject(t, tt.tpl, []string{"rm"})
+			defer func() {
+				os.Remove(parentDir)
+			}()
+
+			outLog := &bytes.Buffer{}
+			// os.Remove(filepath.Join(parentDir, "rm"))
+			g := gmo.New("org1", newRepo, log.New(outLog, log.DebugLvl))
+			err := g.ReplaceConfigOrigin(parentDir)
+			if err == nil {
+				t.Errorf("got: <nil>, expected err to be thrown")
 			}
 		})
 	}
