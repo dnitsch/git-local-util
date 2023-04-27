@@ -1,7 +1,7 @@
 package migrate
 
 import (
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -30,10 +30,6 @@ func New(find, replace string, log log.Loggeriface) Migrate {
 	}
 }
 
-func (m Migrate) Configs() []*GitConfigMap {
-	return m.configs
-}
-
 type GitConfigMap struct {
 	iniFile        *ini.File
 	CurrentOrigin  Origin
@@ -43,19 +39,17 @@ type GitConfigMap struct {
 
 type Origin string
 
-func (o Origin) String() string {
-	return string(o)
-}
-
 func (o Origin) Replace(find, replace string) string {
 	return strings.Replace(string(o), find, replace, 1)
 }
 
+// ReplaceConfigOrigin identifies all .git/configs in a directory recursively
+// loads the INI config file and attemps to perform a replacement
 func (m Migrate) ReplaceConfigOrigin(parentDir string) error {
-	return filepath.Walk(parentDir, m.WalkFunc)
+	return filepath.Walk(parentDir, m.walkFunc)
 }
 
-func (m Migrate) WalkFunc(path string, info os.FileInfo, err error) error {
+func (m Migrate) walkFunc(path string, info fs.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
@@ -69,29 +63,20 @@ func (m Migrate) WalkFunc(path string, info os.FileInfo, err error) error {
 		}
 		gm := GitConfigMap{iniFile: cfg, File: path}
 
-		if err := gm.SetNewConfig(path, m.find, m.replace); err != nil {
+		if err := gm.setNewConfig(path, m.find, m.replace); err != nil {
 			m.log.Debugf("falied to set new value in git config path: %s\n", path)
 			return err
 		}
-
-		m.configs = append(m.configs, &gm)
+		m.log.Debugf("successfully replaced origin in: %s, exchanged '%s' for '%s'", path, m.find, m.replace)
 
 		return nil
 	}
 	return nil
 }
 
-func (g GitConfigMap) SetNewConfig(path, find, replace string) error {
+func (g GitConfigMap) setNewConfig(path, find, replace string) error {
 	url := Origin(g.iniFile.Section(INI_SECTION).Key(INI_PROPERTY).Value())
 
 	g.iniFile.Section(INI_SECTION).Key(INI_PROPERTY).SetValue(url.Replace(find, replace))
 	return g.iniFile.SaveTo(g.File)
 }
-
-// func (g GitConfigMap) SetRemoteUrlOrigin(find, replace string) {
-// 	originUrl := Origin(g.iniFile.Section(INI_SECTION).Key(INI_PROPERTY).Value())
-// 	g.CurrentOrigin = originUrl
-// 	newUrl := Origin(originUrl)
-// 	newUrl.Replace(find, replace)
-// 	g.ReplacedOrigin = newUrl
-// }
