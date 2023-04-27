@@ -28,6 +28,11 @@ build: clean install bingen
 
 build_ci: clean install_ci bingen
 
+cross-build: bingen
+
+release:
+	OWNER=$(OWNER) NAME=$(NAME) PAT=$(PAT) VERSION=$(VERSION) . hack/release.sh 
+
 test_prereq: 
 	mkdir -p .coverage
 	go install github.com/jstemmer/go-junit-report/v2@latest && \
@@ -40,4 +45,3 @@ test: test_prereq
 
 coverage: test
 	go tool cover -html=.coverage/out
-
