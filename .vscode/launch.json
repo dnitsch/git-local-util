@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "go",
+            "name": "migrate windows",
+            "request": "launch",
+            "debugAdapter": "dlv-dap",
+            "mode": "debug",
+            "logOutput": "debugger",
+            "showLog": true,
+            "trace": "verbose",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/git-local-util.go",
+            "env": {
+            },
+            "args": [
+                "migrate",
+                "-d",
+                "c:\folder",
+                "-f", "foo", 
+                "-r", "bar",
+                "--verbose"
+            ]
+        },
+    ]
+}
