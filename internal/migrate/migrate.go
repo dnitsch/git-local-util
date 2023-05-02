@@ -1,7 +1,7 @@
 package migrate
 
 import (
-	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -46,11 +46,12 @@ func (o Origin) Replace(find, replace string) string {
 // ReplaceConfigOrigin identifies all .git/configs in a directory recursively
 // loads the INI config file and attemps to perform a replacement
 func (m Migrate) ReplaceConfigOrigin(parentDir string) error {
-	return filepath.Walk(parentDir, m.walkFunc)
+	return filepath.WalkDir(parentDir, m.walkFunc)
 }
 
-func (m Migrate) walkFunc(path string, info fs.FileInfo, err error) error {
+func (m Migrate) walkFunc(path string, info os.DirEntry, err error) error {
 	if err != nil {
+		m.log.Errorf("error reading dir in walkDirFunc: %v", err)
 		return err
 	}
 
@@ -59,6 +60,7 @@ func (m Migrate) walkFunc(path string, info fs.FileInfo, err error) error {
 		m.log.Debugf("found git config path: %s\n", path)
 		cfg, err := ini.Load(path)
 		if err != nil {
+			m.log.Errorf("error loading ini file from path: %v", err)
 			return err
 		}
 		gm := GitConfigMap{iniFile: cfg, File: path}
