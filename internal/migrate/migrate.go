@@ -46,6 +46,7 @@ func (o Origin) Replace(find, replace string) string {
 // ReplaceConfigOrigin identifies all .git/configs in a directory recursively
 // loads the INI config file and attemps to perform a replacement
 func (m Migrate) ReplaceConfigOrigin(parentDir string) error {
+	m.log.Debugf("attempting to read parentDir: %s", parentDir)
 	return filepath.WalkDir(parentDir, m.walkFunc)
 }
 
@@ -78,7 +79,6 @@ func (m Migrate) walkFunc(path string, info os.DirEntry, err error) error {
 
 func (g GitConfigMap) setNewConfig(path, find, replace string) error {
 	url := Origin(g.iniFile.Section(INI_SECTION).Key(INI_PROPERTY).Value())
-
 	g.iniFile.Section(INI_SECTION).Key(INI_PROPERTY).SetValue(url.Replace(find, replace))
 	return g.iniFile.SaveTo(g.File)
 }

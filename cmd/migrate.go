@@ -37,6 +37,8 @@ func migrateOrigin(cmd *cobra.Command, args []string) error {
 	if verbose {
 		logger = log.New(os.Stdout, log.DebugLvl)
 	}
+	logger.Debug("initializing migration")
 	gm := migrate.New(find, replace, logger)
+	logger.Debugf("starting migration on parentDir: %s", parentDir)
 	return gm.ReplaceConfigOrigin(parentDir)
 }
